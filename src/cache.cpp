@@ -1,12 +1,11 @@
 #include "../include/cache.h"
+#include <algorithm>
 #include <cstring>
+#include <limits>
+#include <strings.h>
 #include <vector>
 
 using namespace std;
-
-int find_lru(total_cache &A) { // use it to find the set to insert it into
-  //
-}
 
 base_cache::base_cache(unsigned int block_size, unsigned int num_lines) {
   this->block_size = block_size;
@@ -45,8 +44,11 @@ int base_cache::write(uint &address) {
 total_cache::total_cache(unsigned int assoc, unsigned int block_size,
                          unsigned int total_size) {
   this->assoc = assoc;
+  this->total_size = total_size;
+  this->block_size = block_size;
+  this->lines_per_bank = total_size / (block_size * assoc);
   for (uint i = 0; i < assoc; i++) {
-    this->banks.emplace_back(block_size, total_size / (block_size * assoc));
+    this->banks.emplace_back(block_size, lines_per_bank);
   }
 }
 
@@ -66,4 +68,18 @@ int total_cache::write(uint &address) { // should implement
     }
   }
   return 0;
+}
+
+uint total_cache::find_lru(
+    uint &address) { // use it to find the set to insert it into
+  int max = -1;
+  int index = -1;
+  uint line_number = address % (this->lines_per_bank);
+  for (uint i = 0; i < this->assoc; i++) {
+    if (this->banks[i].lru_arr[line_number] > max) {
+      index = i;
+      max = this->banks[i].lru_arr[line_number];
+    }
+  }
+  return (uint)index;
 }

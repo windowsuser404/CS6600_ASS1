@@ -45,7 +45,20 @@ void parser(const std::string &filename,
   // return accessPatterns;
 }
 
-void simulate(total_cache &L1, total_cache &L2, total_cache &VC,
-              AccessPattern &trace) {
-  //
+void simulate(vector<total_cache> &T_MEM, uint LEVELS,
+              vector<AccessPattern> &trace) {
+  uint L1_reads = 0;
+  uint L1_read_misses = 0;
+  uint L1_writes = 0;
+  uint L1_write_misses = 0;
+  uint VC_swap_req = 0;
+  uint No_of_Swaps = 0;
+  uint L2_reads = 0;
+  uint L2_read_misses = 0;
+  uint L2_writes = 0;
+  uint L2_write_misses = 0;
+  uint L2_to_MEM_write_backs = 0;
+  uint Memory_taffic = 0;
+  for (uint i = 0; i < LEVELS; i++) {
+  }
 }
