@@ -46,7 +46,8 @@ void parser(const std::string &filename,
 }
 
 void simulate(vector<total_cache> &T_MEM, uint LEVELS,
-              vector<AccessPattern> &trace) {
+              vector<AccessPattern> &trace, int has_Victim) {
+  // can use levels later, for now just simulating L1,L2,Vc
   uint L1_reads = 0;
   uint L1_read_misses = 0;
   uint L1_writes = 0;
@@ -59,6 +60,63 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
   uint L2_write_misses = 0;
   uint L2_to_MEM_write_backs = 0;
   uint Memory_taffic = 0;
-  for (uint i = 0; i < LEVELS; i++) {
+
+  // declaring flags
+  bool in_L1 = 0;
+  bool in_VC = 0;
+  bool in_L2;
+
+  for (uint i = 0; i < trace.size(); i++) {
+    char type = trace[i].first;
+    uint addr = trace[i].second;
+    // try in L1
+    if (type == 'r') {
+      L1_reads++;
+    } else if (type == 'w') {
+      L1_writes++;
+    } else {
+      cout << "WTF is that letter\n";
+      exit(1);
+    }
+    in_L1 = T_MEM[0].access(addr, type);
+    if (in_L1) {
+      T_MEM[0].update_lru(addr);
+    } else {
+      if (type == 'r') {
+        L1_read_misses++;
+      } else if (type == 'w') {
+        L1_write_misses++;
+      }
+      if (has_Victim) {
+        VC_swap_req++;
+        in_VC = T_MEM[0].check_in_victim(addr);
+        if (in_VC) {
+          No_of_Swaps++;
+        }
+      }
+    }
+    if (!in_L1 && !in_VC) {
+      if (type == 'r') {
+        L2_reads++;
+      } else if (type == 'w') {
+        L2_writes++;
+      }
+      in_L2 = T_MEM[1].access(addr, type);
+      T_MEM[1].update_lru(addr);
+      // since L2 has, move this to L1 and handle appropriately
+      bool empty = 0;
+      int dirty = 0;
+      uint evict = T_MEM[0].put_it_inside(addr, empty, dirty);
+      if (!empty) {
+        evict = T_MEM[0].victim.insert(evict, dirty);
+        if (dirty) {
+          // block wass dirty write into L2
+          T_MEM[1].put_it_inside(evict, empty, dirty);
+        }
+      }
+      if (!in_L2) {
+        T_MEM[1].put_it_inside(addr, empty, dirty);
+      }
+    }
   }
 }

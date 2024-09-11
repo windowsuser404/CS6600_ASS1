@@ -17,4 +17,4 @@ using uint = unsigned int;
 void parser(const string &filename, vector<AccessPattern> accessPatterns);
 
 void simulate(vector<total_cache> &T_MEM, uint LEVELS,
-              vector<AccessPattern> &trace);
+              vector<AccessPattern> &trace, int has_victim);

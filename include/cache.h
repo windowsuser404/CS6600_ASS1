@@ -17,37 +17,60 @@ private:
   unsigned char data;
 };
 
-class total_cache { // culmination of all base caches
-private:
-  uint assoc;
-  uint lines_per_bank;
-  uint block_size;
-  uint total_size;
-  std::vector<base_cache> banks;
-
-public:
-  total_cache(unsigned int assoc, unsigned int block_size,
-              unsigned int total_size);
-  int read(uint &address);      // return 1 if read successful i.e it was a hit
-  int write(uint &address);     // return 1 if write successful i.e it was a hit
-  uint find_lru(uint &address); // use it to find the set to insert it into
-  void insert(uint &address);
-};
+class total_cache;
 
 class base_cache { // one assoc of cache, no memory in simulator as not
                    // important
-private:
+protected:
   uint block_size;
   uint num_lines;
   vector<uint> tag_array;
   vector<uint> valid_array;
-  vector<uint> lru_arr;
   vector<uint> ditry;
 
 public:
-  base_cache(unsigned int block_size, unsigned int num_lines);
-  int read(uint &address);
-  int write(uint &address);
-  void insert(uint &address);
+  base_cache(uint block_size, uint num_lines);
+  int access(uint &line, char &type, uint &tag);
+  virtual uint insert(uint &address) {
+    // can be redefined if needed later
+    return 1;
+  }
   friend total_cache;
+};
+
+class victim_cache : protected base_cache {
+public:
+  victim_cache(uint block_size, uint num_lines);
+  uint find_lru();
+  void update_lru(uint &address);
+  uint insert(uint &address, int &dirty);
+  vector<uint> lru_array;
+  friend total_cache;
+};
+
+class total_cache { // culmination of all base caches
+private:
+  uint assoc;
+  uint lines_per_bank;
+  vector<vector<uint>>
+      lru_arr; // outer is to select bank, inner is to select line
+  uint block_size;
+  uint total_size;
+  vector<base_cache> banks;
+  uint line_generator(uint &address);
+  uint tag_generator(uint &address);
+  uint
+  insert(uint &address, uint &line, uint &tag,
+         int &dirty); // returns the popped off values, can be ignored
+                      // if not needed, assuming it gives back the full address
+
+public:
+  victim_cache victim;
+  total_cache(uint assoc, uint block_size, uint total_size,
+              uint number_of_victims);
+  int access(uint &address, char &type);
+  uint find_lru(uint &address); // use it to find the set to insert it into
+  void update_lru(uint &address);
+  int check_in_victim(uint &address);
+  uint put_it_inside(uint &address, bool &empty, int &dirty);
 };

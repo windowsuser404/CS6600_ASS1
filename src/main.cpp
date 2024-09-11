@@ -32,18 +32,6 @@ void make_cache(uint size, uint blocksize, uint assoc) {}
 
 // Main function to handle command-line arguments
 int main(int argc, char *argv[]) {
-  uint L1_reads = 0;
-  uint L1_read_misses = 0;
-  uint L1_writes = 0;
-  uint L1_write_misses = 0;
-  uint VC_swap_req = 0;
-  uint No_of_Swaps = 0;
-  uint L2_reads = 0;
-  uint L2_read_misses = 0;
-  uint L2_writes = 0;
-  uint L2_write_misses = 0;
-  uint L2_to_MEM_write_backs = 0;
-  uint Memory_taffic = 0;
   // Check if the number of arguments is correct
   if (argc != 8) {
     cerr << "Error: Incorrect number of arguments.\n";
@@ -93,10 +81,10 @@ int main(int argc, char *argv[]) {
   // can make multiple level support later by putting an array
 
   vector<total_cache> T_MEM;
-  T_MEM.emplace_back(L1_ASSOC, L1_BLOCKSIZE, L1_SIZE);
-  T_MEM.emplace_back(L2_ASSOC, L1_BLOCKSIZE, L2_SIZE);
+  T_MEM.emplace_back(L1_ASSOC, L1_BLOCKSIZE, L1_SIZE, VC_NUM_BLOCKS);
+  T_MEM.emplace_back(L2_ASSOC, L1_BLOCKSIZE, L2_SIZE, 0);
 
-  simulate(T_MEM, LEVELS, Accesses);
+  simulate(T_MEM, LEVELS, Accesses, VC_NUM_BLOCKS);
 
   return 0;
 }
