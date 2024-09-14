@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
   // Validate the inputs
   if (L1_SIZE <= 0 || L1_ASSOC <= 0 || L1_BLOCKSIZE <= 0 || VC_NUM_BLOCKS < 0 ||
-      L2_SIZE < 0 || L2_ASSOC <= 0) {
+      L2_SIZE < 0 || L2_ASSOC < 0) {
     cerr << "Error: Invalid input values.\n";
     printHelp();
     return 1;
@@ -81,10 +81,17 @@ int main(int argc, char *argv[]) {
   // can make multiple level support later by putting an array
 
   vector<total_cache> T_MEM;
+#if DEBUG
+  cout << "Making L1" << endl;
+#endif
   T_MEM.emplace_back(L1_ASSOC, L1_BLOCKSIZE, L1_SIZE, VC_NUM_BLOCKS);
+
+#if DEBUG
+  cout << "Making L2" << endl;
+#endif
   T_MEM.emplace_back(L2_ASSOC, L1_BLOCKSIZE, L2_SIZE, 0);
 
-  simulate(T_MEM, LEVELS, Accesses, VC_NUM_BLOCKS);
+  simulate(T_MEM, LEVELS, Accesses);
 
   return 0;
 }

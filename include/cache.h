@@ -41,10 +41,12 @@ public:
 class victim_cache : protected base_cache {
 public:
   victim_cache(uint block_size, uint num_lines);
+  void print_contents();
   uint find_lru();
   void update_lru(uint &address);
-  uint insert(uint &address, int &dirty);
+  uint insert(uint &address, bool &dirty, bool &empty, bool was_dirty);
   vector<uint> lru_array;
+  uint return_size();
   friend total_cache;
 };
 
@@ -60,8 +62,8 @@ private:
   uint line_generator(uint &address);
   uint tag_generator(uint &address);
   uint
-  insert(uint &address, uint &line, uint &tag,
-         int &dirty); // returns the popped off values, can be ignored
+  insert(uint &address, uint &line, uint &tag, bool &dirty,
+         char &type); // returns the popped off values, can be ignored
                       // if not needed, assuming it gives back the full address
 
 public:
@@ -72,5 +74,7 @@ public:
   uint find_lru(uint &address); // use it to find the set to insert it into
   void update_lru(uint &address);
   int check_in_victim(uint &address);
-  uint put_it_inside(uint &address, bool &empty, int &dirty);
+  uint put_it_inside(uint &address, bool &empty, bool &dirty, char &type);
+  void print_contents();
+  uint return_size();
 };

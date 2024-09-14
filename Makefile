@@ -2,7 +2,7 @@
 CC = g++
 OPT = -O3
 WARN = -Wall
-CFLAGS = $(OPT) $(WARN) -I$(INCLUDE_DIR)
+CFLAGS = $(OPT) $(WARN) -I$(INCLUDE_DIR) -g
 
 # Directories
 SRC_DIR = src
@@ -21,6 +21,10 @@ TARGET = cache_sim
 # Default rule
 all: $(TARGET)
 	@echo "Build complete!"
+
+run: $(TARGET)
+	@echo "Build complete!"
+	./TEST.sh
 
 # Rule for building the executable
 $(TARGET): $(OBJ_FILES)
