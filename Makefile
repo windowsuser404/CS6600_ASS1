@@ -24,6 +24,7 @@ all: $(TARGET)
 
 run: $(TARGET)
 	@echo "Build complete!"
+	reset
 	./TEST.sh
 
 # Rule for building the executable

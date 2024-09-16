@@ -121,36 +121,41 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
       } else if (type == 'w') {
         L1_write_misses++;
       }
+    }
+
+    if (!in_L1) {
+
+      empty = 0;
+      dirty = 0;
+#if DEBUG
+      cout << "Not in L1" << endl;
+#endif
+
       if (has_vc) {
         VC_swap_req++;
+#if DEBUG
+        cout << "Checking in victim" << endl;
+#endif
         in_VC = T_MEM[0].check_in_victim(addr);
         if (in_VC) {
           No_of_Swaps++;
         }
       }
-    }
 
-    if (!in_L1) {
-
-#if DEBUG
-      cout << "Not in L1 and VC" << endl;
-#endif
-
-      empty = 0;
-      dirty = 0;
       evict = T_MEM[0].put_it_inside(addr, empty, dirty, type);
       if (!empty) {
         if (has_vc) {
+          if (in_VC) {
 #if DEBUG
-          cout << "inserting " << evict << " into VC" << endl;
+            cout << "swapping with Vc" << endl;
 #endif
-          if (dirty)
-            evict = T_MEM[0].victim.insert(evict, dirty, empty, 1);
-          else
-            evict = T_MEM[0].victim.insert(evict, dirty, empty, 0);
+            T_MEM[0].victim.swap(evict, addr, dirty);
+          } else {
+            evict = T_MEM[0].victim.insert(evict, dirty, empty, dirty);
+          }
         }
         if (!in_VC) {
-          if (dirty && has_L2) {
+          if (has_L2) {
 
 #if DEBUG
             cout << "Acessing in L2" << endl;
@@ -159,33 +164,43 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
 #if DEBUG
             cout << "Victim pushin to L2" << endl;
 #endif
-
-            T_MEM[1].put_it_inside(evict, empty, dirty, type);
+            char temp_type;
+            if (dirty) {
+              temp_type = 'w';
+            } else {
+              temp_type = 'r';
+            }
+            if (T_MEM[1].access(evict, temp_type)) {
+              T_MEM[1].update_lru(evict);
+            } else {
+              T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
+            }
             if (dirty) {
               L2_to_MEM_write_backs++;
             }
           }
         }
-        if (has_L2) {
+      }
+      if (has_L2 && !in_VC) {
+        if (type == 'r') {
+          L2_reads++;
+        } else if (type == 'w') {
+          L2_writes++;
+        }
+        in_L2 = T_MEM[1].access(addr, type);
+        // since L2 has, move this to L1 and handle appropriately
+        if (!in_L2) {
           if (type == 'r') {
-            L2_reads++;
+            L2_read_misses++;
           } else if (type == 'w') {
-            L2_writes++;
+            L2_write_misses++;
           }
-          in_L2 = T_MEM[1].access(addr, type);
+          T_MEM[1].put_it_inside(addr, empty, dirty, type);
+          if (dirty) {
+            L2_to_MEM_write_backs++;
+          }
+        } else {
           T_MEM[1].update_lru(addr);
-          // since L2 has, move this to L1 and handle appropriately
-          if (!in_L2) {
-            if (type == 'r') {
-              L2_read_misses++;
-            } else if (type == 'w') {
-              L2_write_misses++;
-            }
-            T_MEM[1].put_it_inside(addr, empty, dirty, type);
-            if (dirty) {
-              L2_to_MEM_write_backs++;
-            }
-          }
         }
       }
     }
@@ -200,16 +215,16 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
 #if DEBUG
   cout << "Simulation done" << endl;
 #endif
-#if DEFBUG
-  cout << "Printing L1" << endl;
+#if DEBUG
+  cout << "\nPrinting L1" << endl;
 #endif
   T_MEM[0].print_contents();
-#if DEFBUG
-  cout << "Printing L2" << endl;
+#if DEBUG
+  cout << "\nPrinting L2" << endl;
 #endif
   T_MEM[1].print_contents();
-#if DEFBUG
-  cout << "Printing victim" << endl;
+#if DEBUG
+  cout << "\nPrinting victim" << endl;
 #endif
   T_MEM[0].victim.print_contents();
 }

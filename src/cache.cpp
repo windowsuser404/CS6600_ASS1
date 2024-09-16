@@ -50,6 +50,21 @@ uint victim_cache::find_lru() {
   return (uint)index;
 }
 
+void victim_cache::swap(uint &to_insert, uint &to_remove, bool &dirty) {
+  uint tag = to_remove / block_size;
+  update_lru(to_remove);
+#if DEBUG
+  cout << "Going to remove " << to_remove << " From VC" << endl;
+#endif
+  for (uint i = 0; i < num_lines; i++) {
+    if (tag_array[i] == tag) {
+      tag_array[i] = to_insert / block_size;
+      this->ditry[i] = dirty;
+      break;
+    }
+  }
+}
+
 void victim_cache::update_lru(uint &address) {
   // uint line = address % (this->block_size * this->num_lines);
   uint tag = address / (this->block_size * this->num_lines);
@@ -86,9 +101,9 @@ uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
       cout << i << "th line is valid with lru " << lru_array[i] << endl;
 #endif
       if (lru_array[i] < num_lines - 1) {
-#if DEBUG
-        cout << "increasing lru of " << i << "th line" << endl;
-#endif
+        // #if DEBUG
+        //         cout << "increasing lru of " << i << "th line" << endl;
+        // #endif
         lru_array[i]++;
       } else {
 #if DEBUG
@@ -155,9 +170,9 @@ int total_cache::access(uint &address, char &type) {
   if (found) {
     for (uint j = 0; j < this->assoc; j++) {
       if (this->lru_arr[j][line] < temp_lru) {
-#if DEBUG
-        cout << "increasing lru of bank " << j << endl;
-#endif
+        // #if DEBUG
+        //         cout << "increasing lru of bank " << j << endl;
+        // #endif
         this->lru_arr[j][line]++;
       }
     }
@@ -299,13 +314,16 @@ uint total_cache::put_it_inside(uint &address, bool &empty, bool &dirty,
 }
 
 int total_cache::check_in_victim(uint &address) {
+#if DEBUG
+  cout << "checking for " << address << endl;
+#endif
   int index = -1;
   uint temp_lru;
   uint temp_dirty;
   char temp_type;
   uint evicted_address;
   for (uint i = 0; i < this->victim.num_lines; i++) {
-    if (this->victim.tag_array[i] == address / this->victim.num_lines &&
+    if (this->victim.tag_array[i] == address / this->block_size &&
         this->victim.valid_array[i]) {
       temp_lru = victim.lru_array[i];
       temp_dirty = victim.ditry[i];
@@ -321,9 +339,12 @@ int total_cache::check_in_victim(uint &address) {
       break;
     }
   }
-  if (index == -1)
+  if (index == -1) {
+#if DEBUG
+    cout << "Not in VC" << endl;
+#endif
     return 0;
-  else {
+  } else {
     // this->victim.tag_array[index] =
     //     evicted_address / this->block_size; // fully associative
     // for (uint i = 0; i < this->victim.num_lines; i++) {
@@ -332,6 +353,9 @@ int total_cache::check_in_victim(uint &address) {
     //   }
     // }
     // victim.lru_array[index] = 0;
+#if DEBUG
+    cout << "in VC" << endl;
+#endif
     return 1;
   }
 }

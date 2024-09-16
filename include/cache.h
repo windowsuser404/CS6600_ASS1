@@ -40,6 +40,7 @@ public:
 
 class victim_cache : protected base_cache {
 public:
+  void swap(uint &to_insert, uint &to_remove, bool &dirty);
   victim_cache(uint block_size, uint num_lines);
   void print_contents();
   uint find_lru();

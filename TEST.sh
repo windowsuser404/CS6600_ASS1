@@ -1,3 +1,3 @@
 #!/bin/bash
-reset
-./cache_sim 8 4 1 2 0 0 test.txt
+clear
+./cache_sim 8 2 1 2 16 4 ./test.txt
