@@ -1,3 +1,3 @@
 #!/bin/bash
-clear
-./cache_sim 8 2 1 2 16 4 ./test.txt
+# clear
+./cache_sim 1024 2 16 0 0 0 ./gcc_trace.txt

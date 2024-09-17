@@ -24,8 +24,8 @@ all: $(TARGET)
 
 run: $(TARGET)
 	@echo "Build complete!"
-	reset
-	./TEST.sh
+	# reset
+	./TEST.sh > ./run.log
 
 # Rule for building the executable
 $(TARGET): $(OBJ_FILES)

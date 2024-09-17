@@ -47,6 +47,7 @@ public:
   void update_lru(uint &address);
   uint insert(uint &address, bool &dirty, bool &empty, bool was_dirty);
   vector<uint> lru_array;
+  uint is_dirty(uint &i);
   uint return_size();
   friend total_cache;
 };

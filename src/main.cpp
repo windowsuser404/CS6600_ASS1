@@ -1,12 +1,13 @@
 #include <cstdlib> // For atoi function
 #include <cstring> // For strcmp function
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "../include/cache.h"
 #include "../include/simulator.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define LEVELS 2
 
 using namespace std;
@@ -61,6 +62,18 @@ int main(int argc, char *argv[]) {
     printHelp();
     return 1;
   }
+
+  //
+  cout << "===== Simulator configuration =====" << endl
+       << "L1_SIZE:		" << L1_SIZE << endl
+       << "L1_ASSOC:		" << L1_ASSOC << endl
+       << "L1_BLOCKSIZE:		" << L1_BLOCKSIZE << endl
+       << "VC_NUM_BLOCKS:	" << VC_NUM_BLOCKS << endl
+       << "L2_SIZE:		" << L2_SIZE << endl
+       << "L2_ASSOC:		" << L2_ASSOC << endl
+       << "trace_file:		" << trace_file << endl
+       << endl;
+  //
 
 #if DEBUG
   // Output the input values (for verification)

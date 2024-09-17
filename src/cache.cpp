@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <vector>
 
-#define DEBUG 1
+#define DEBUG 0
 
 using namespace std;
 
@@ -180,14 +180,14 @@ int total_cache::access(uint &address, char &type) {
     cout << "making bank " << i << " line " << line << " as lru" << endl;
 #endif
     this->lru_arr[i][line] = 0;
-#if DEBUG
-    cout << "found in cache" << endl;
-#endif
+    // #if DEBUG
+    //     cout << "found in cache" << endl;
+    // #endif
     return 1;
   } else {
-#if DEBUG
-    cout << "not found in cache" << endl;
-#endif
+    // #if DEBUG
+    //     cout << "not found in cache" << endl;
+    // #endif
     return 0;
   }
 }
@@ -385,22 +385,53 @@ uint total_cache::return_size() { return this->total_size; }
 //
 void total_cache::print_contents() {
   // make it MRU later
-  for (uint i = 0; i < banks.size(); i++) {
-    cout << "Bank " << i << " contents" << endl;
-    for (uint j = 0; j < banks[i].tag_array.size(); j++) {
-      cout << banks[i].tag_array[j] * (lines_per_bank) + j;
-      cout << " V=" << banks[i].valid_array[j];
-      cout << " D=" << banks[i].ditry[j] << endl;
+  for (uint j = 0; j < banks[0].tag_array.size(); j++) {
+    cout << "set " << j << ": ";
+    vector<pair<uint, uint>> temp_lru;
+    for (uint i = 0; i < banks.size(); i++) {
+      temp_lru.push_back({lru_arr[i][j], i});
     }
+
+    // #if DEBUG
+    //     cout << "going to sort" << endl;
+    // #endif
+
+    std::sort(temp_lru.begin(), temp_lru.end(),
+              [](pair<uint, uint> &a, pair<uint, uint> &b) {
+                return a.first < b.first;
+              });
+    for (uint i = 0; i < temp_lru.size(); i++) {
+      cout << hex << banks[temp_lru[i].second].tag_array[j];
+      cout << dec << " ";
+      if (banks[temp_lru[i].second].ditry[j])
+        cout << "D ";
+      else
+        cout << "  ";
+    }
+    cout << endl;
   }
 }
 
 void victim_cache::print_contents() {
   // make it MRU later
-  cout << "Printing Victim Cache" << endl;
+  cout << "===== VC contents =====" << endl;
+  vector<pair<uint, uint>> temp_lru(num_lines);
   for (uint i = 0; i < num_lines; i++) {
-    cout << tag_array[i];
-    cout << " V=" << valid_array[i];
-    cout << " D=" << ditry[i] << endl;
+    temp_lru.push_back({lru_array[i], i});
+  }
+  std::sort(temp_lru.begin(), temp_lru.end(),
+            [](pair<uint, uint> &a, pair<uint, uint> &b) {
+              return a.first < b.first;
+            });
+  cout << "set " << 0 << ":";
+  for (uint i = 0; i < num_lines; i++) {
+    cout << " " << tag_array[temp_lru[i].second];
+    cout << " ";
+    if (is_dirty(i))
+      cout << "D ";
+    else
+      cout << "  ";
   }
 }
+
+uint victim_cache::is_dirty(uint &i) { return this->ditry[i]; }
