@@ -67,7 +67,7 @@ void victim_cache::swap(uint &to_insert, uint &to_remove, bool &dirty) {
 
 void victim_cache::update_lru(uint &address) {
   // uint line = address % (this->block_size * this->num_lines);
-  uint tag = address / (this->block_size * this->num_lines);
+  uint tag = address / (this->block_size);
   uint temp_lru = 0;
   uint temp_bank = 0;
   for (uint i = 0; i < this->num_lines; i++) {
@@ -93,18 +93,20 @@ uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
   //   cout << "Inserting " << address << " in VC" << endl;
   // #endif
   for (uint i = 0; i < num_lines; i++) {
-#if DEBUG
-    cout << "doing " << i << "th line" << endl;
-#endif
+    // #if DEBUG
+    //     cout << "doing " << i << "th line" << endl;
+    // #endif
     if (valid_array[i]) {
-#if DEBUG
-      cout << i << "th line is valid with lru " << lru_array[i] << endl;
-#endif
-      if (lru_array[i] < num_lines - 1) {
-        // #if DEBUG
-        //         cout << "increasing lru of " << i << "th line" << endl;
-        // #endif
+      // #if DEBUG
+      //       cout << i << "th line is valid with lru " << lru_array[i] <<
+      //       endl;
+      // #endif
+      if (lru_array[i] < num_lines - 1) { // cant be the lru
         lru_array[i]++;
+#if DEBUG
+        cout << "increasing lru of tag=" << tag_array[i]
+             << "D=" << this->ditry[i] << endl;
+#endif
       } else {
 #if DEBUG
         cout << "found lru in " << i << "th line" << endl;
@@ -114,16 +116,21 @@ uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
         lru_array[i] = 0;
         tag_array[i] = address / block_size;
         ditry[i] = was_dirty;
+#if DEBUG
+        cout << "MRU tag=" << tag_array[i] << "D=" << this->ditry[i] << endl;
+#endif
       }
     } else {
-#if DEBUG
-      cout << "VC has empty " << i << " th line" << endl;
-#endif
       empty = 1;
       lru_array[i] = 0;
       tag_array[i] = address / block_size;
       valid_array[i] = 1;
       ditry[i] = was_dirty;
+#if DEBUG
+      cout << "VC has empty " << i << " th line" << endl;
+      cout << "Inserting tag=" << tag_array[i] << " D=" << this->ditry[i]
+           << endl;
+#endif
       break;
     }
   }
@@ -190,6 +197,7 @@ int total_cache::access(uint &address, char &type) {
     // #endif
     return 0;
   }
+  update_lru(address);
 }
 
 uint total_cache::find_lru(
@@ -288,12 +296,19 @@ uint total_cache::put_it_inside(uint &address, bool &empty, bool &dirty,
   empty = false;
   for (uint i = 0; i < assoc; i++) {
     if (!banks[i].valid_array[line]) {
+
+#if DEBUG
+      cout << "bank=" << i << " is invalid and free" << endl;
+#endif
       index = i;
       empty = true;
       break;
     }
   }
   if (empty) {
+#if DEBUG
+    cout << "Above acessed cache is empty" << endl;
+#endif
     for (uint i = 0; i < assoc; i++) {
       if (banks[i].valid_array[line]) {
         lru_arr[i][line]++;
@@ -317,7 +332,7 @@ int total_cache::check_in_victim(uint &address) {
 #if DEBUG
   cout << "checking for " << address << endl;
 #endif
-  int index = -1;
+  bool found = 0;
   uint temp_lru;
   uint temp_dirty;
   char temp_type;
@@ -327,7 +342,7 @@ int total_cache::check_in_victim(uint &address) {
         this->victim.valid_array[i]) {
       temp_lru = victim.lru_array[i];
       temp_dirty = victim.ditry[i];
-      index = i;
+      found = 1;
       // bool temp1;
       // bool temp2;
       // if (temp_dirty)
@@ -339,7 +354,7 @@ int total_cache::check_in_victim(uint &address) {
       break;
     }
   }
-  if (index == -1) {
+  if (!found) {
 #if DEBUG
     cout << "Not in VC" << endl;
 #endif
@@ -401,6 +416,9 @@ void total_cache::print_contents() {
                 return a.first < b.first;
               });
     for (uint i = 0; i < temp_lru.size(); i++) {
+#if DEBUG
+      cout << "V=" << banks[temp_lru[i].second].valid_array[j] << " ";
+#endif
       cout << hex << banks[temp_lru[i].second].tag_array[j];
       cout << dec << " ";
       if (banks[temp_lru[i].second].ditry[j])
@@ -415,7 +433,7 @@ void total_cache::print_contents() {
 void victim_cache::print_contents() {
   // make it MRU later
   cout << "===== VC contents =====" << endl;
-  vector<pair<uint, uint>> temp_lru(num_lines);
+  vector<pair<uint, uint>> temp_lru;
   for (uint i = 0; i < num_lines; i++) {
     temp_lru.push_back({lru_array[i], i});
   }
@@ -425,13 +443,14 @@ void victim_cache::print_contents() {
             });
   cout << "set " << 0 << ":";
   for (uint i = 0; i < num_lines; i++) {
-    cout << " " << tag_array[temp_lru[i].second];
-    cout << " ";
-    if (is_dirty(i))
+#if DEBUG
+    cout << "V=" << this->valid_array[i] << " ";
+#endif
+    cout << " " << hex << tag_array[temp_lru[i].second];
+    cout << dec << " ";
+    if (this->ditry[temp_lru[i].second])
       cout << "D ";
     else
       cout << "  ";
   }
 }
-
-uint victim_cache::is_dirty(uint &i) { return this->ditry[i]; }
