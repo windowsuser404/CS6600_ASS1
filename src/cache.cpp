@@ -52,14 +52,17 @@ uint victim_cache::find_lru() {
 
 void victim_cache::swap(uint &to_insert, uint &to_remove, bool &dirty) {
   uint tag = to_remove / block_size;
+  bool temp_dirty;
   update_lru(to_remove);
 #if DEBUG
   cout << "Going to remove " << to_remove << " From VC" << endl;
 #endif
   for (uint i = 0; i < num_lines; i++) {
-    if (tag_array[i] == tag) {
+    if (tag_array[i] == tag && valid_array[i]) {
       tag_array[i] = to_insert / block_size;
+      temp_dirty = this->ditry[i];
       this->ditry[i] = dirty;
+      dirty = temp_dirty;
       break;
     }
   }
@@ -84,10 +87,10 @@ void victim_cache::update_lru(uint &address) {
   lru_array[temp_bank] = 0;
 }
 
-uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
-                          bool was_dirty) {
+uint victim_cache::insert(uint &address, bool &VC_evict_dirty, bool &empty,
+                          bool &L1_evict_dirty) {
   uint evict = 0;
-  is_dirty = 0;
+  VC_evict_dirty = 0;
   empty = 0;
   // #if DEBUG
   //   cout << "Inserting " << address << " in VC" << endl;
@@ -111,11 +114,11 @@ uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
 #if DEBUG
         cout << "found lru in " << i << "th line" << endl;
 #endif
-        is_dirty = this->ditry[i];
+        VC_evict_dirty = this->ditry[i];
         evict = tag_array[i] * block_size;
         lru_array[i] = 0;
         tag_array[i] = address / block_size;
-        ditry[i] = was_dirty;
+        ditry[i] = L1_evict_dirty;
 #if DEBUG
         cout << "MRU tag=" << tag_array[i] << "D=" << this->ditry[i] << endl;
 #endif
@@ -125,7 +128,7 @@ uint victim_cache::insert(uint &address, bool &is_dirty, bool &empty,
       lru_array[i] = 0;
       tag_array[i] = address / block_size;
       valid_array[i] = 1;
-      ditry[i] = was_dirty;
+      ditry[i] = L1_evict_dirty;
 #if DEBUG
       cout << "VC has empty " << i << " th line" << endl;
       cout << "Inserting tag=" << tag_array[i] << " D=" << this->ditry[i]

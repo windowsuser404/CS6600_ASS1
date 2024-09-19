@@ -18,3 +18,6 @@ void parser(const string &filename, vector<AccessPattern> &accessPatterns);
 
 void simulate(vector<total_cache> &T_MEM, uint LEVELS,
               vector<AccessPattern> &trace);
+
+void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
+                   vector<AccessPattern> &trace);

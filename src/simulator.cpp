@@ -114,17 +114,13 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
     cout << "Checking in L1" << endl;
 #endif
     in_L1 = T_MEM[0].access(addr, type);
-    if (in_L1) {
-      // T_MEM[0].update_lru(addr);
-    } else {
+
+    if (!in_L1) {
       if (type == 'r') {
         L1_read_misses++;
       } else if (type == 'w') {
         L1_write_misses++;
       }
-    }
-
-    if (!in_L1) {
 
       empty = 0;
       dirty = 0;
@@ -148,7 +144,9 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
 #if DEBUG
             cout << "swapping with Vc" << endl;
 #endif
-            T_MEM[0].victim.swap(evict, addr, dirty);
+            T_MEM[0].victim.swap(evict, addr,
+                                 dirty); // updates the dirty bit to check if
+                                         // swapped block is dirty
             if (dirty)
               temp_type = 'w';
             else
@@ -162,9 +160,14 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
           }
         } else {
 #if DEBUG
-          cout << "Was empty, but doesnt have a VC" << endl;
+          cout << "Wasnt empty, but doesnt have a VC" << endl;
 #endif
-          L1_VC_writeback++;
+          if (dirty) {
+            L1_VC_writeback++;
+            if (!has_L2)
+              Memory_taffic++; // doesnt have a anything back to send, so writes
+                               // to MM
+          }
         }
         if (!in_VC && !empty) { // checking again empty to see if VC was empty
           if (has_L2) {
@@ -304,4 +307,101 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
   cout << "2. energy-delay product:			" << 513915708.8544
        << endl;
   cout << "3. total area:				" << 0.0096 << endl;
+}
+
+void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
+                   vector<AccessPattern> &trace) {
+  // can use levels later, for now just simulating L1,L2,Vc
+  uint L1_reads = 0;
+  uint L1_read_misses = 0;
+  uint L1_writes = 0;
+  uint L1_write_misses = 0;
+  uint VC_swap_req = 0;
+  uint L1_VC_writeback = 0;
+  uint No_of_Swaps = 0;
+  uint L2_reads = 0;
+  uint L2_read_misses = 0;
+  uint L2_writes = 0;
+  uint L2_write_misses = 0;
+  uint L2_to_MEM_write_backs = 0;
+  uint Memory_taffic = 0;
+
+  // declaring flags
+  bool has_vc = 0;
+  bool has_L2 = 0;
+
+  if (T_MEM[0].victim.return_size() != 0) {
+    has_vc = 1;
+  }
+  if (T_MEM[1].return_size() != 0) {
+    has_L2 = 1;
+  }
+
+#if DEBUG
+  cout << "Starting to simulate\n" << endl;
+#endif
+
+  for (uint i = 0; i < trace.size(); i++) {
+    bool empty = 0;
+    bool dirty = 0;
+    bool in_L1 = 0;
+    bool in_VC = 0;
+    bool in_L2 = 0;
+    uint evict;
+    char temp_type;
+    char type = trace[i].first;
+    uint addr = trace[i].second;
+#if DEBUG
+    cout << "doing " << type << " on address " << hex << addr << endl;
+#endif
+    // try in L1
+    if (type == 'r') {
+      L1_reads++;
+    } else if (type == 'w') {
+      L1_writes++;
+    } else {
+      cout << "WTF is that letter\n";
+      exit(1);
+    }
+
+    // start with L1_writes
+    in_L1 = T_MEM[0].access(addr, type);
+    // if not in L1 do the following
+    if (!in_L1) {
+      if (type == 'r') {
+        L1_read_misses++;
+      } else if (type == 'w') {
+        L1_write_misses++;
+      }
+      evict = T_MEM[0].put_it_inside(addr, empty, dirty, type);
+
+      // time to do victim interactions
+      if (!empty && has_vc) { // L1 wasnt empty, hence need to interact with VC
+        in_VC = T_MEM[0].check_in_victim(addr);
+        if (in_VC) {
+          T_MEM[0].victim.swap(evict, addr, dirty);
+          if (dirty) {
+            char temp_type = 'w';
+            T_MEM[0].access(addr, temp_type);
+          }
+        } else {
+          bool VC_evict_dirty = 0;
+          T_MEM[0].victim.insert(evict, VC_evict_dirty, empty, dirty);
+          dirty = VC_evict_dirty; // noting down the down sent out by VC
+        }
+      } else {
+        // VC interaction not needed (either wasnt present, or L1 was empty)
+      }
+    }
+  }
+  cout << endl;
+  cout << "===== L1 contents =====" << endl;
+  T_MEM[0].print_contents();
+
+  if (has_vc) {
+#if DEBUG
+    cout << "\nPrinting victim" << endl;
+#endif
+    T_MEM[0].victim.print_contents();
+  }
 }

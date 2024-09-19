@@ -45,7 +45,8 @@ public:
   void print_contents();
   uint find_lru();
   void update_lru(uint &address);
-  uint insert(uint &address, bool &dirty, bool &empty, bool was_dirty);
+  uint insert(uint &address, bool &VC_evict_dirty, bool &empty,
+              bool &L1_evict_dirty);
   vector<uint> lru_array;
   uint is_dirty(uint &i);
   uint return_size();

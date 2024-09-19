@@ -104,7 +104,8 @@ int main(int argc, char *argv[]) {
 #endif
   T_MEM.emplace_back(L2_ASSOC, L1_BLOCKSIZE, L2_SIZE, 0);
 
-  simulate(T_MEM, LEVELS, Accesses);
+  // simulate(T_MEM, LEVELS, Accesses);
+  temp_simulate(T_MEM, LEVELS, Accesses);
 
   return 0;
 }
