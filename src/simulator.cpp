@@ -389,13 +389,14 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
           bool VC_evict_dirty = 0;
           evict = T_MEM[0].victim.insert(evict, VC_evict_dirty, empty, dirty);
           dirty = VC_evict_dirty; // noting down the down sent out by VC
-          if (dirty) {
+          if (dirty && has_L2) {
             // we have evicted a dirty block from VC, need to write it to L2
             char temp_type = 'w';
             if (!T_MEM[1].access(evict, temp_type)) {
               // check if L2 has the given block, if yes, then lite, we just
               // mark dirty and update lru, else, we need to evict something
               // else, push it back to MM
+              T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
             }
           }
         }
