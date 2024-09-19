@@ -347,7 +347,8 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     bool in_L1 = 0;
     bool in_VC = 0;
     bool in_L2 = 0;
-    uint evict;
+    uint evict;    // L1 evict
+    uint VC_evcit; // evicted from VC
     char temp_type;
     char type = trace[i].first;
     uint addr = trace[i].second;
@@ -386,11 +387,46 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
           }
         } else {
           bool VC_evict_dirty = 0;
-          T_MEM[0].victim.insert(evict, VC_evict_dirty, empty, dirty);
+          evict = T_MEM[0].victim.insert(evict, VC_evict_dirty, empty, dirty);
           dirty = VC_evict_dirty; // noting down the down sent out by VC
+          if (dirty) {
+            // we have evicted a dirty block from VC, need to write it to L2
+            char temp_type = 'w';
+            if (!T_MEM[1].access(evict, temp_type)) {
+              // check if L2 has the given block, if yes, then lite, we just
+              // mark dirty and update lru, else, we need to evict something
+              // else, push it back to MM
+            }
+          }
+        }
+      } else if (!empty && !has_vc) {
+        // we evicted from L1, but VC not there, so do direct shift to L2 here,
+        // if the evicted block was dirty, just write it in L2 if it exists
+        if (dirty && has_L2) {
+          char temp_type = 'w';
+          if (!T_MEM[1].access(evict, temp_type)) {
+            // We checked if the block was there in L2 to write, if it wasnt
+            // there, we fetch it back and then write in it
+            T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
+          }
         }
       } else {
-        // VC interaction not needed (either wasnt present, or L1 was empty)
+        // Hmm, no need for else now, basically we figured out it was just
+        // empty, so no writeback needed
+      }
+
+      if (has_L2 && !in_VC) {
+        // it has L2, but VC couldnt satisfy (either no VC, or not in VC), now
+        // send a read req to L2, if block not present allocate it and handle
+        // write back properly
+        char temp_type = 'r';
+        in_L2 = T_MEM[1].access(addr, temp_type);
+        if (!in_L2) {
+          // Loms, wasnt in L2 either, time to put it inside and evict a block
+          T_MEM[1].put_it_inside(
+              addr, empty, dirty,
+              temp_type); // no need to get return value, not simulating MM here
+        }
       }
     }
   }
@@ -403,5 +439,13 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     cout << "\nPrinting victim" << endl;
 #endif
     T_MEM[0].victim.print_contents();
+  }
+
+  if (has_L2) {
+    cout << "===== L2 contents =====" << endl;
+#if DEBUG
+    cout << "\nPrinting L2" << endl;
+#endif
+    T_MEM[1].print_contents();
   }
 }
