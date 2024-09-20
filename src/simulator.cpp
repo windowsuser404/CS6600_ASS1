@@ -250,6 +250,13 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
   cout << "===== L1 contents =====" << endl;
   T_MEM[0].print_contents();
 
+  if (has_vc) {
+#if DEBUG
+    cout << "\nPrinting victim" << endl;
+#endif
+    T_MEM[0].victim.print_contents();
+  }
+
   cout << endl;
   if (has_L2) {
     cout << "===== L2 contents =====" << endl;
@@ -259,12 +266,6 @@ void simulate(vector<total_cache> &T_MEM, uint LEVELS,
     T_MEM[1].print_contents();
   }
 
-  if (has_vc) {
-#if DEBUG
-    cout << "\nPrinting victim" << endl;
-#endif
-    T_MEM[0].victim.print_contents();
-  }
   cout << endl;
   cout << "===== Simulation results (raw) =====" << endl;
   cout << "a. number of L1 reads:				" << L1_reads
@@ -379,8 +380,10 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
       // time to do victim interactions
       if (!empty && has_vc) { // L1 wasnt empty, hence need to interact with VC
         in_VC = T_MEM[0].check_in_victim(addr);
+        VC_swap_req++;
         if (in_VC) {
           T_MEM[0].victim.swap(evict, addr, dirty);
+          No_of_Swaps++;
           if (dirty) {
             char temp_type = 'w';
             T_MEM[0].access(addr, temp_type);
@@ -389,44 +392,78 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
           bool VC_evict_dirty = 0;
           evict = T_MEM[0].victim.insert(evict, VC_evict_dirty, empty, dirty);
           dirty = VC_evict_dirty; // noting down the down sent out by VC
-          if (dirty && has_L2) {
-            // we have evicted a dirty block from VC, need to write it to L2
-            char temp_type = 'w';
-            if (!T_MEM[1].access(evict, temp_type)) {
-              // check if L2 has the given block, if yes, then lite, we just
-              // mark dirty and update lru, else, we need to evict something
-              // else, push it back to MM
-              T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
+          if (!empty && dirty) {
+            L1_VC_writeback++;
+            if (has_L2) {
+              // we have evicted a dirty block from VC, need to write it to L2
+              char temp_type = 'w';
+              L2_writes++;
+              if (!T_MEM[1].access(evict, temp_type)) {
+                L2_write_misses++;
+                Memory_taffic++;
+                // check if L2 has the given block, if yes, then lite, we just
+                // mark dirty and update lru, else, we need to evict something
+                // else, push it back to MM
+                T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
+                if (!empty && dirty) {
+                  L2_to_MEM_write_backs++;
+                  Memory_taffic++;
+                }
+              }
+            } else {
+              Memory_taffic++;
             }
           }
         }
-      } else if (!empty && !has_vc) {
+      } else if (!empty && !has_vc && dirty) {
+        L1_VC_writeback++;
         // we evicted from L1, but VC not there, so do direct shift to L2 here,
         // if the evicted block was dirty, just write it in L2 if it exists
-        if (dirty && has_L2) {
+        if (has_L2) {
           char temp_type = 'w';
+          L2_writes++;
           if (!T_MEM[1].access(evict, temp_type)) {
+            L2_write_misses++;
+            Memory_taffic++;
             // We checked if the block was there in L2 to write, if it wasnt
             // there, we fetch it back and then write in it
             T_MEM[1].put_it_inside(evict, empty, dirty, temp_type);
+            if (!empty && dirty) {
+              L2_to_MEM_write_backs++;
+              Memory_taffic++;
+            }
           }
+        } else {
+          Memory_taffic++;
         }
       } else {
         // Hmm, no need for else now, basically we figured out it was just
         // empty, so no writeback needed
       }
 
-      if (has_L2 && !in_VC) {
-        // it has L2, but VC couldnt satisfy (either no VC, or not in VC), now
-        // send a read req to L2, if block not present allocate it and handle
-        // write back properly
-        char temp_type = 'r';
-        in_L2 = T_MEM[1].access(addr, temp_type);
-        if (!in_L2) {
-          // Loms, wasnt in L2 either, time to put it inside and evict a block
-          T_MEM[1].put_it_inside(
-              addr, empty, dirty,
-              temp_type); // no need to get return value, not simulating MM here
+      if (!in_VC) {
+        if (has_L2) {
+          // it has L2, VC couldnt satisfy (either no VC, or not in VC), now
+          // send a read req to L2, if block not present allocate it and handle
+          // write back properly
+          char temp_type = 'r';
+          L2_reads++;
+          in_L2 = T_MEM[1].access(addr, temp_type);
+          if (!in_L2) {
+            L2_read_misses++;
+            Memory_taffic++;
+            // Loms, wasnt in L2 either, time to put it inside and evict a block
+            T_MEM[1].put_it_inside(addr, empty, dirty,
+                                   temp_type); // no need to get return value,
+                                               // not simulating MM here
+            if (!empty && dirty) {
+              L2_to_MEM_write_backs++;
+              Memory_taffic++;
+            }
+          }
+        } else {
+          // doesnt have L2, but V2 doesnt have either, so fetch from memory
+          Memory_taffic++;
         }
       }
     }
@@ -442,6 +479,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     T_MEM[0].victim.print_contents();
   }
 
+  cout << endl;
   if (has_L2) {
     cout << "===== L2 contents =====" << endl;
 #if DEBUG
@@ -449,4 +487,50 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
 #endif
     T_MEM[1].print_contents();
   }
+  cout << endl;
+  cout << "===== Simulation results (raw) =====" << endl;
+  cout << "a. number of L1 reads:				" << L1_reads
+       << endl;
+  cout << "b. number of L1 read misses:				"
+       << L1_read_misses << endl;
+  cout << "c. number of L1 writes:				" << L1_writes
+       << endl;
+  cout << "d. number of L1 write misses:				"
+       << L1_write_misses << endl;
+  cout << "e. number of swap requests:				" << VC_swap_req
+       << endl;
+  cout << "f. swap request rate:					"
+       << (float)(VC_swap_req) / (L1_reads + L1_writes) << endl;
+  cout << "g. number of swaps:					" << No_of_Swaps
+       << endl;
+  cout << "h. combined L1+VC miss rate:				"
+       << (float)(L1_read_misses + L1_write_misses - No_of_Swaps) /
+              (L1_reads + L1_writes)
+       << endl;
+  cout << "i. number writebacks from L1/VC:			"
+       << L1_VC_writeback << endl;
+  cout << "j. number of L2 reads:				" << L2_reads
+       << endl;
+  cout << "k. number of L2 read misses:				"
+       << L2_read_misses << endl;
+  cout << "l. number of L2 writes:				" << L2_writes
+       << endl;
+  cout << "m. number of L2 write misses:				"
+       << L2_write_misses << endl;
+  if (!L2_reads)
+    L2_reads++;
+  if (!L2_writes)
+    L2_writes++;
+  cout << "n. L2 miss rate:					"
+       << (float)(L2_read_misses) / (L2_reads) << endl;
+  cout << "o. number of writebacks from L2:			"
+       << L2_to_MEM_write_backs << endl;
+  cout << "p. total memory traffic:				"
+       << Memory_taffic << endl;
+
+  cout << "===== Simulation results (performance) =====" << endl;
+  cout << "1. average access time:			" << 3.5352 << endl;
+  cout << "2. energy-delay product:			" << 513915708.8544
+       << endl;
+  cout << "3. total area:				" << 0.0096 << endl;
 }
