@@ -69,7 +69,6 @@ void victim_cache::swap(uint &to_insert, uint &to_remove, bool &dirty) {
 }
 
 void victim_cache::update_lru(uint &address) {
-  // uint line = address % (this->block_size * this->num_lines);
   uint tag = address / (this->block_size);
   uint temp_lru = 0;
   uint temp_bank = 0;
@@ -92,18 +91,8 @@ uint victim_cache::insert(uint &address, bool &VC_evict_dirty, bool &empty,
   uint evict = 0;
   VC_evict_dirty = 0;
   empty = 0;
-  // #if DEBUG
-  //   cout << "Inserting " << address << " in VC" << endl;
-  // #endif
   for (uint i = 0; i < num_lines; i++) {
-    // #if DEBUG
-    //     cout << "doing " << i << "th line" << endl;
-    // #endif
     if (valid_array[i]) {
-      // #if DEBUG
-      //       cout << i << "th line is valid with lru " << lru_array[i] <<
-      //       endl;
-      // #endif
       if (lru_array[i] < num_lines - 1) { // cant be the lru
         lru_array[i]++;
 #if DEBUG
@@ -180,9 +169,6 @@ int total_cache::access(uint &address, char &type) {
   if (found) {
     for (uint j = 0; j < this->assoc; j++) {
       if (this->lru_arr[j][line] < temp_lru) {
-        // #if DEBUG
-        //         cout << "increasing lru of bank " << j << endl;
-        // #endif
         this->lru_arr[j][line]++;
       }
     }
@@ -190,14 +176,8 @@ int total_cache::access(uint &address, char &type) {
     cout << "making bank " << i << " line " << line << " as lru" << endl;
 #endif
     this->lru_arr[i][line] = 0;
-    // #if DEBUG
-    //     cout << "found in cache" << endl;
-    // #endif
     return 1;
   } else {
-    // #if DEBUG
-    //     cout << "not found in cache" << endl;
-    // #endif
     return 0;
   }
   update_lru(address);
@@ -205,31 +185,15 @@ int total_cache::access(uint &address, char &type) {
 
 uint total_cache::find_lru(
     uint &address) { // use it to find the set to insert it into
-                     // #if DEBUG
-                     //   cout << "Finding the LRU bank to replace" << endl;
-                     // #endif
   uint line_number = line_generator(address);
-  // #if DEBUG
-  //   cout << "line number " << line_number << " in cache" << endl;
-  // #endif
-  // #if DEBUG
-  //   cout << lru_arr.size() << " " << lru_arr[0].size() << endl;
-  // #endif
   uint max = this->lru_arr[0][line_number];
   uint index = 0;
   for (uint i = 0; i < this->assoc; i++) {
-#if DEBUG
-    // cout << "bank " << i << " line " << line_number << "has lru "
-    //      << lru_arr[i][line_number] << endl;
-#endif
     if (this->lru_arr[i][line_number] > max) {
       index = i;
       max = this->lru_arr[i][line_number];
     }
   }
-#if DEBUG
-  cout << "found bank " << index << " as lru" << endl;
-#endif
   return index;
 }
 
@@ -251,11 +215,6 @@ void total_cache::update_lru(uint &address) {
   cout << "Current lru " << temp_lru << endl;
 #endif
   for (uint i = 0; i < banks.size(); i++) {
-#if DEBUG
-    // cout << "bank " << i << " has line " << line << " lru " <<
-    // lru_arr[i][line]
-    //      << endl;
-#endif
     if (lru_arr[i][line] < temp_lru && banks[i].valid_array[line]) {
       lru_arr[i][line]++;
     }

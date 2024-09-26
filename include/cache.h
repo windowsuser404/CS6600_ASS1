@@ -39,6 +39,11 @@ public:
 };
 
 class victim_cache : protected base_cache {
+private:
+  double AccessTime;
+  double Area;
+  double Energy;
+
 public:
   void swap(uint &to_insert, uint &to_remove, bool &dirty);
   victim_cache(uint block_size, uint num_lines);
@@ -68,6 +73,9 @@ private:
   insert(uint &address, uint &line, uint &tag, bool &dirty,
          char &type); // returns the popped off values, can be ignored
                       // if not needed, assuming it gives back the full address
+  double AccessTime;
+  double Area;
+  double Energy;
 
 public:
   victim_cache victim;

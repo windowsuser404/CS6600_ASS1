@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../include/cache.h"
+#include "../include/cacti_parser.cpp"
 #include "../include/simulator.h"
 
 #define DEBUG 0
