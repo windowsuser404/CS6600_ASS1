@@ -40,9 +40,7 @@ public:
 
 class victim_cache : protected base_cache {
 private:
-  double AccessTime;
-  double Area;
-  double Energy;
+  void Put_params();
 
 public:
   void swap(uint &to_insert, uint &to_remove, bool &dirty);
@@ -55,6 +53,9 @@ public:
   vector<uint> lru_array;
   uint is_dirty(uint &i);
   uint return_size();
+  float AccessTime;
+  float Area;
+  float Energy;
   friend total_cache;
 };
 
@@ -73,9 +74,7 @@ private:
   insert(uint &address, uint &line, uint &tag, bool &dirty,
          char &type); // returns the popped off values, can be ignored
                       // if not needed, assuming it gives back the full address
-  double AccessTime;
-  double Area;
-  double Energy;
+  void Put_params();
 
 public:
   victim_cache victim;
@@ -88,4 +87,8 @@ public:
   uint put_it_inside(uint &address, bool &empty, bool &dirty, char &type);
   void print_contents();
   uint return_size();
+  uint return_block_size() { return block_size; }
+  float AccessTime;
+  float Area;
+  float Energy;
 };

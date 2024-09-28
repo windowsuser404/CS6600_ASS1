@@ -3,3 +3,5 @@
 *.log
 cache_sim
 .gdb_history
+src/cacti
+src/cache.cfg

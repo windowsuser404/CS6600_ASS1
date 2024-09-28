@@ -1,6 +1,11 @@
+#include "../include/cacti_parser.h"
 #include <assert.h>
 #include <cstdio>
 #include <cstring>
+#include <iostream>
+#include <unistd.h>
+
+using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////
 // If return value is >0, CACTI failed on this cache configuration.
@@ -31,6 +36,13 @@ int get_cacti_results(unsigned int SIZE, unsigned int BLOCKSIZE,
   // 2. Execute cacti, and create a pipe between
   //    this process and the cacti process.
   /////////////////////////////////////////////////////////
+  // cout << "executing " << command << endl;
+  int cd_res = chdir("./src");
+  if (cd_res == -1) {
+    cout << "Couldnt change to cacti directory" << endl;
+    exit(1);
+  }
+  // cout << "executing" << command << endl;
   pipe = popen(command, "r");
   assert(pipe);
 
@@ -69,6 +81,13 @@ int get_cacti_results(unsigned int SIZE, unsigned int BLOCKSIZE,
   // 4. Close the pipe.
   /////////////////////////////////////////////////////////
   pclose(pipe);
+  cd_res = chdir("./..");
+  if (cd_res == -1) {
+    cout << "Couldnt change back to og directory" << endl;
+    exit(1);
+  }
+
+  // cout << "cacti jover" << command << endl;
 
   return (errflag);
 }

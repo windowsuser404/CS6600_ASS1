@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "../include/cache.h"
-#include "../include/cacti_parser.cpp"
 #include "../include/simulator.h"
 
 #define DEBUG 0
@@ -104,7 +103,6 @@ int main(int argc, char *argv[]) {
   cout << "Making L2" << endl;
 #endif
   T_MEM.emplace_back(L2_ASSOC, L1_BLOCKSIZE, L2_SIZE, 0);
-
   // simulate(T_MEM, LEVELS, Accesses);
   temp_simulate(T_MEM, LEVELS, Accesses);
 

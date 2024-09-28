@@ -2,17 +2,20 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip> // For hex
+#include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <utility> // For pair
 #include <vector>
 
-#include "../include/cache.h"
 #include "../include/simulator.h"
 // Type alias for better readability
 
 #define DEBUG 0
+#define MM_ACC_LAT 20
+#define BANDWIDTH (16) // 16GB/s = 16B/ns
+#define E_MEM 0.05
 
 using namespace std;
 
@@ -61,6 +64,8 @@ void parser(const string &filename, vector<AccessPattern> &accessPatterns) {
 void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
                    vector<AccessPattern> &trace) {
   // can use levels later, for now just simulating L1,L2,Vc
+  // cout << "starting sim" << endl;
+  //
   uint L1_reads = 0;
   uint L1_read_misses = 0;
   uint L1_writes = 0;
@@ -75,6 +80,9 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   uint L2_to_MEM_write_backs = 0;
   uint Memory_taffic = 0;
   float Area, Energy, AccessTime;
+  Area = 0;
+  Energy = 0;
+  AccessTime = 0;
 
   // declaring flags
   bool has_vc = 0;
@@ -117,6 +125,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
 
     // start with L1_writes
     in_L1 = T_MEM[0].access(addr, type);
+    // AccessTime += T_MEM[0].AccessTime;
     // if not in L1 do the following
     if (!in_L1) {
       if (type == 'r') {
@@ -218,6 +227,9 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     }
   }
   cout << endl;
+  // Doing parameter calculations
+  Area += T_MEM[0].Area;
+
   cout << "===== L1 contents =====" << endl;
   T_MEM[0].print_contents();
 
@@ -226,6 +238,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     cout << "\nPrinting victim" << endl;
 #endif
     T_MEM[0].victim.print_contents();
+    Area += T_MEM[0].victim.Area;
   }
 
   cout << endl;
@@ -235,8 +248,10 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     cout << "\nPrinting L2" << endl;
 #endif
     T_MEM[1].print_contents();
+    Area += T_MEM[1].Area;
   }
   cout << endl;
+  cout << fixed << setprecision(4);
   cout << "===== Simulation results (raw) =====" << endl;
   cout << "a. number of L1 reads:				" << L1_reads
        << endl;
@@ -249,8 +264,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   cout << "e. number of swap requests:				" << VC_swap_req
        << endl;
   cout << "f. swap request rate:					"
-       << roundToDecimalPlaces((float)(VC_swap_req) / (L1_reads + L1_writes), 4)
-       << endl;
+       << (float)(VC_swap_req) / (L1_reads + L1_writes) << endl;
   cout << "g. number of swaps:					" << No_of_Swaps
        << endl;
   cout << "h. combined L1+VC miss rate:				"
@@ -272,15 +286,57 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   if (!L2_writes)
     L2_writes++;
   cout << "n. L2 miss rate:					"
-       << roundToDecimalPlaces((float)(L2_read_misses) / (L2_reads), 4) << endl;
+       << (float)(L2_read_misses) / (L2_reads) << endl;
   cout << "o. number of writebacks from L2:			"
        << L2_to_MEM_write_backs << endl;
   cout << "p. total memory traffic:				"
        << Memory_taffic << endl;
 
+  ///////////////////////////////
+  // cout << "L1_AT=" << T_MEM[0].AccessTime << endl;
+  // cout << "VC_AT=" << T_MEM[0].victim.AccessTime << endl;
+  // cout << "L2_AT=" << T_MEM[1].AccessTime << endl;
+  // cout << "MM_AT="
+  //      << (MM_ACC_LAT + (((float)T_MEM[0].return_block_size()) / BANDWIDTH))
+  //      << endl;
+  ///////////////////////////////
+
+  AccessTime += T_MEM[0].AccessTime * (L1_writes + L1_reads);
+  if (has_vc)
+    AccessTime += T_MEM[0].victim.AccessTime * (VC_swap_req);
+  if (has_L2) {
+    AccessTime +=
+        T_MEM[1].AccessTime * (L1_write_misses + L1_read_misses - No_of_Swaps);
+    AccessTime +=
+        (MM_ACC_LAT + (((float)T_MEM[0].return_block_size()) / BANDWIDTH)) *
+        (L2_read_misses);
+  } else {
+    AccessTime +=
+        (MM_ACC_LAT + (((float)T_MEM[0].return_block_size()) / BANDWIDTH)) *
+        (Memory_taffic - L1_VC_writeback);
+  }
+  ///////////////////////////////
+  ///
+  ///////////////////////////////
+  Energy += T_MEM[0].Energy *
+            (L1_reads + L1_writes + L1_read_misses + L1_write_misses);
+  if (has_vc)
+    Energy += T_MEM[0].victim.Energy * (2 * VC_swap_req);
+  if (has_L2) {
+    Energy += T_MEM[1].Energy *
+              (L2_reads + L2_writes + L2_read_misses + L2_write_misses);
+    Energy +=
+        E_MEM * (L2_read_misses + L2_write_misses + L2_to_MEM_write_backs);
+  } else {
+    Energy += E_MEM * (L1_read_misses + L1_write_misses - No_of_Swaps +
+                       L1_VC_writeback);
+  }
+  ///////////////////////////////
+
   cout << "===== Simulation results (performance) =====" << endl;
-  cout << "1. average access time:			" << 3.5352 << endl;
-  cout << "2. energy-delay product:			" << 513915708.8544
+  cout << "1. average access time:			"
+       << AccessTime / (trace.size()) << endl;
+  cout << "2. energy-delay product:			" << Energy * AccessTime
        << endl;
-  cout << "3. total area:				" << 0.0096 << endl;
+  cout << "3. total area:				" << Area << endl;
 }
