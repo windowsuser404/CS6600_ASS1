@@ -348,7 +348,6 @@ void total_cache::print_contents() {
 
 void victim_cache::print_contents() {
   // make it MRU later
-  cout << "===== VC contents =====" << endl;
   vector<pair<uint, uint>> temp_lru;
   for (uint i = 0; i < num_lines; i++) {
     temp_lru.push_back({lru_array[i], i});

@@ -226,22 +226,24 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
       }
     }
   }
-  cout << endl;
   // Doing parameter calculations
   Area += T_MEM[0].Area;
 
   cout << "===== L1 contents =====" << endl;
   T_MEM[0].print_contents();
 
+  cout << endl;
   if (has_vc) {
+    cout << "===== VC contents =====" << endl;
 #if DEBUG
     cout << "\nPrinting victim" << endl;
 #endif
     T_MEM[0].victim.print_contents();
     Area += T_MEM[0].victim.Area;
+    cout << endl;
+    cout << endl;
   }
 
-  cout << endl;
   if (has_L2) {
     cout << "===== L2 contents =====" << endl;
 #if DEBUG
@@ -249,9 +251,10 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
 #endif
     T_MEM[1].print_contents();
     Area += T_MEM[1].Area;
+    cout << endl;
   }
-  cout << endl;
   cout << fixed << setprecision(4);
+  // cout << fixed;
   cout << "===== Simulation results (raw) =====" << endl;
   cout << "a. number of L1 reads:				" << L1_reads
        << endl;
@@ -317,6 +320,9 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   }
   ///////////////////////////////
   ///
+  // cout << "L1_nrg=" << T_MEM[0].Energy << endl;
+  // cout << "L2_nrg=" << T_MEM[1].Energy << endl;
+  // cout << "VC_nrg=" << T_MEM[0].victim.Energy << endl;
   ///////////////////////////////
   Energy += T_MEM[0].Energy *
             (L1_reads + L1_writes + L1_read_misses + L1_write_misses);
@@ -332,11 +338,20 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
                        L1_VC_writeback);
   }
   ///////////////////////////////
+  // cout << "Tot_E=" << Energy << endl;
+  // cout << "AcTime=" << AccessTime << endl;
+  double product;
+  // if (!has_L2 && !has_vc)
+  //   product = AccessTime * Energy;
+  // else
+  product = (double)AccessTime * (double)Energy;
+  // cout << "Product=" << product << endl;
+  //////////////////////////////.
 
+  cout << endl;
   cout << "===== Simulation results (performance) =====" << endl;
   cout << "1. average access time:			"
        << AccessTime / (trace.size()) << endl;
-  cout << "2. energy-delay product:			" << Energy * AccessTime
-       << endl;
+  cout << "2. energy-delay product:			" << product << endl;
   cout << "3. total area:				" << Area << endl;
 }
