@@ -79,7 +79,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   uint L2_write_misses = 0;
   uint L2_to_MEM_write_backs = 0;
   uint Memory_taffic = 0;
-  float Area, Energy, AccessTime;
+  double Area, Energy, AccessTime;
   Area = 0;
   Energy = 0;
   AccessTime = 0;
@@ -267,11 +267,11 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   cout << "e. number of swap requests:				" << VC_swap_req
        << endl;
   cout << "f. swap request rate:					"
-       << (float)(VC_swap_req) / (L1_reads + L1_writes) << endl;
+       << (double)(VC_swap_req) / (L1_reads + L1_writes) << endl;
   cout << "g. number of swaps:					" << No_of_Swaps
        << endl;
   cout << "h. combined L1+VC miss rate:				"
-       << (float)(L1_read_misses + L1_write_misses - No_of_Swaps) /
+       << (double)(L1_read_misses + L1_write_misses - No_of_Swaps) /
               (L1_reads + L1_writes)
        << endl;
   cout << "i. number writebacks from L1/VC:			"
@@ -289,7 +289,7 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
   if (!L2_writes)
     L2_writes++;
   cout << "n. L2 miss rate:					"
-       << (float)(L2_read_misses) / (L2_reads) << endl;
+       << (double)(L2_read_misses) / (L2_reads) << endl;
   cout << "o. number of writebacks from L2:			"
        << L2_to_MEM_write_backs << endl;
   cout << "p. total memory traffic:				"
@@ -311,11 +311,11 @@ void temp_simulate(vector<total_cache> &T_MEM, uint LEVELS,
     AccessTime +=
         T_MEM[1].AccessTime * (L1_write_misses + L1_read_misses - No_of_Swaps);
     AccessTime +=
-        (MM_ACC_LAT + (((float)T_MEM[0].return_block_size()) / BANDWIDTH)) *
+        (MM_ACC_LAT + (((double)T_MEM[0].return_block_size()) / BANDWIDTH)) *
         (L2_read_misses);
   } else {
     AccessTime +=
-        (MM_ACC_LAT + (((float)T_MEM[0].return_block_size()) / BANDWIDTH)) *
+        (MM_ACC_LAT + (((double)T_MEM[0].return_block_size()) / BANDWIDTH)) *
         (Memory_taffic - L1_VC_writeback);
   }
   ///////////////////////////////

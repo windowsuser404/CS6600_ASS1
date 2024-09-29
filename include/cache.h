@@ -53,9 +53,9 @@ public:
   vector<uint> lru_array;
   uint is_dirty(uint &i);
   uint return_size();
-  float AccessTime;
-  float Area;
-  float Energy;
+  double AccessTime;
+  double Area;
+  double Energy;
   friend total_cache;
 };
 
@@ -88,7 +88,7 @@ public:
   void print_contents();
   uint return_size();
   uint return_block_size() { return block_size; }
-  float AccessTime;
-  float Area;
-  float Energy;
+  double AccessTime;
+  double Area;
+  double Energy;
 };

@@ -12,14 +12,14 @@ using namespace std;
 // Always check the return value!
 ///////////////////////////////////////////////////////////////////////////
 int get_cacti_results(unsigned int SIZE, unsigned int BLOCKSIZE,
-                      unsigned int ASSOC, float *AccessTime, float *Energy,
-                      float *Area) {
+                      unsigned int ASSOC, double *AccessTime, double *Energy,
+                      double *Area) {
   char command[128];
   FILE *pipe;
 
   char buffer[128];
   char *substring;
-  float Height, Width;
+  double Height, Width;
 
   int errflag = 3;
 
@@ -59,18 +59,18 @@ int get_cacti_results(unsigned int SIZE, unsigned int BLOCKSIZE,
   while (fgets(buffer, 128, pipe)) {
     if ((substring = strstr(buffer, "Access time"))) {
       assert(substring = strstr(buffer, ":"));
-      sscanf(substring, ": %f", AccessTime);
+      sscanf(substring, ": %lf", AccessTime);
       // printf("%s", buffer);
       errflag--;
     } else if ((substring =
                     strstr(buffer, "Total dynamic read energy per access"))) {
       assert(substring = strstr(buffer, ":"));
-      sscanf(substring, ":%f", Energy);
+      sscanf(substring, ":%lf", Energy);
       // printf("%s", buffer);
       errflag--;
     } else if ((substring = strstr(buffer, "Cache height x width"))) {
       assert(substring = strstr(buffer, ":"));
-      sscanf(substring, ": %f x %f", &Height, &Width);
+      sscanf(substring, ": %lf x %lf", &Height, &Width);
       *Area = Height * Width;
       // printf("%s", buffer);
       errflag--;
